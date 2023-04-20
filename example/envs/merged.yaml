@@ -1,0 +1,9 @@
+#yq --input-format yaml --output-format yaml 'explode(.) | .sandbox' envs/env.yaml > envs/merged.yaml
+var2: "common2"
+var3: "common3"
+var4: "specific1"
+var5: "specific2"
+var6: "additional6"
+var7: "additional7"
+var1: "override var1 for sandbox"
+var8: "var8 for sandbox"

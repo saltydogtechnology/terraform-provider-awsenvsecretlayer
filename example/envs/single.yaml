@@ -1,0 +1,9 @@
+single: &single
+  var1: "common1"
+  var2: "common2"
+  var3: "common3"
+
+single_specific_variables:
+  <<: *single
+  var4: "specific1"
+  var5: "specific2"
