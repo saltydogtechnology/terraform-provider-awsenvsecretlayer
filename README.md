@@ -1,7 +1,7 @@
 
-# AWS Lambda Environment Secret Layer Terraform Module
+# AWS Lambda Environment Secret Layer Terraform Provider
 
-This Terraform module provides a custom resource for managing AWS Lambda environment secret layers. It allows you to create and update Lambda layers with environment variables and secrets from AWS Secrets Manager. The layer is created with a **.env** file containing the environment variables and secrets, which can then be used by your Lambda functions.
+This Terraform provider offers a custom resource for managing AWS Lambda environment secret layers. It allows you to create and update Lambda layers with environment variables and secrets from AWS Secrets Manager. The layer is created with a **.env** file containing the environment variables and secrets, which can then be used by your Lambda functions.
 
 ## Features
 - Creates a Lambda layer with environment variables and secrets.
@@ -10,18 +10,26 @@ This Terraform module provides a custom resource for managing AWS Lambda environ
 
 ## Usage
 
+##### **`./envs/vars.yaml`**
+```
+var1: "example-1"
+var2: "example-2"
+var3: "example-3"
+```
+
+##### **`main.tf`**
 ```
 terraform {
   required_providers {
     awsenvsecretlayer = {
-      source  = "terraform.local/com/awsenvsecretlayer"
+      source = "saltydogtechnology/awsenvsecretlayer"
       version = "0.0.1"
     }
   }
 }
 
 provider "awsenvsecretlayer" {
-  region  = "eu-central-1"
+  region  = "us-east-1"
   profile = "aws-profile-name"
 }
 
@@ -34,8 +42,8 @@ resource "awsenvsecretlayer_lambda" "example" {
   file_name           = "example.env"
   yaml_config         = jsonencode(local.yaml_data)
   secrets_arns        = [
-    "arn:aws:secretsmanager:eu-central-1:111111111111:secret:example1/env-1/123",
-    "arn:aws:secretsmanager:eu-central-1:222222222222:secret:example2/secret/1233"
+    "arn:aws:secretsmanager:us-east-1:111111111111:secret:example1/env-1/123",
+    "arn:aws:secretsmanager:us-east-1:222222222222:secret:example2/secret/1233"
   ]
   compatible_runtimes = ["nodejs14.x", "python3.8"]
   skip_destroy        = false
