@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	// "reflect"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
