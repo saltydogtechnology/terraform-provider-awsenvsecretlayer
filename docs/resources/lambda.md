@@ -21,6 +21,7 @@ description: |-
 - `compatible_runtimes` (List of String) - A list of runtimes this layer is compatible with.
 - `license_files` (List of String) - A list of license files to be included in the AWS Lambda Layer.
 - `secrets_arns` (List of String, Sensitive) - A list of AWS Secrets Manager ARNs to be fetched and included in the AWS Lambda Layer.
+- `envs_map` (Map of String) -  A map of environment variables to be included in the AWS Lambda Layer .env file. 
 - `skip_destroy` (Boolean) - If set to true, the AWS Lambda Layer will not be destroyed when the Terraform resource is destroyed.
 - `stored_secrets_hash` (String) - A hash of the stored secrets to be compared to the current secrets.
 - `yaml_config` (String) - The YAML configuration to be parsed and processed.
@@ -29,3 +30,8 @@ description: |-
 
 - `id` (String) - The ID of this resource.
 - `need_update` (Boolean) - Indicates whether the AWS Lambda Layer needs to be updated or not.
+  envs_map = {
+    "ENV_VAR_FROM_MAP_1" = "value_1"
+    "ENV_VAR_FROM_MAP_2" = "value_2"
+    "ENV_VAR_FROM_MAP_3" = "value_3"
+  }

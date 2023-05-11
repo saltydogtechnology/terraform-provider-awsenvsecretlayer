@@ -30,7 +30,7 @@ terraform {
   required_providers {
     awsenvsecretlayer = {
       source = "saltydogtechnology/awsenvsecretlayer"
-      version = "0.0.2"
+      version = "0.0.3"
     }
   }
 }
@@ -52,6 +52,11 @@ resource "awsenvsecretlayer_lambda" "example" {
     "arn:aws:secretsmanager:us-east-1:111111111111:secret:example1/env-1/123",
     "arn:aws:secretsmanager:us-east-1:222222222222:secret:example2/secret/1233"
   ]
+  envs_map = {
+    "ENV_VAR_FROM_MAP_1" = "value_1"
+    "ENV_VAR_FROM_MAP_2" = "value_2"
+    "ENV_VAR_FROM_MAP_3" = "value_3"
+  }
   compatible_runtimes = ["nodejs14.x", "python3.8"]
   skip_destroy        = false
   license_files       = ["${path.module}/envs/LICENSE.txt"]
