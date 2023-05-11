@@ -100,7 +100,7 @@ resource "awsenvsecretlayer_lambda" "example" {
       <td>envs_map</td>
       <td>A map of environment variables to be included in the AWS Lambda Layer .env file. </td>
       <td>map(string)</td>
-      <td>[]</td>
+      <td>{}</td>
       <td>no</td>
     </tr>
     <tr>
