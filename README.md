@@ -97,6 +97,13 @@ resource "awsenvsecretlayer_lambda" "example" {
       <td>no</td>
     </tr>
     <tr>
+      <td>envs_map</td>
+      <td>A map of environment variables to be included in the AWS Lambda Layer .env file. </td>
+      <td>map(string)</td>
+      <td>[]</td>
+      <td>no</td>
+    </tr>
+    <tr>
       <td>compatible_runtimes</td>
       <td>List of compatible runtimes for the Lambda Layer.</td>
       <td>list(string)</td>
