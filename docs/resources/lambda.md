@@ -30,8 +30,3 @@ description: |-
 
 - `id` (String) - The ID of this resource.
 - `need_update` (Boolean) - Indicates whether the AWS Lambda Layer needs to be updated or not.
-  envs_map = {
-    "ENV_VAR_FROM_MAP_1" = "value_1"
-    "ENV_VAR_FROM_MAP_2" = "value_2"
-    "ENV_VAR_FROM_MAP_3" = "value_3"
-  }
