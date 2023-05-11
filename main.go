@@ -4,7 +4,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 
-	"github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer/awsenvsecretlayer"
+	// "github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer/awsenvsecretlayer"
+	"terraform-provider-awsenvsecretlayer/awsenvsecretlayer"
 
 )
 

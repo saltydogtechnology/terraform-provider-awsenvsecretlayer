@@ -45,6 +45,11 @@ func resourceLambdaLayer() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"envs_map": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"stored_secrets_hash": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -168,7 +173,7 @@ func resourceLambdaLayerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	// Check if storedSecretsHash and fetchedSecrets are equal
 	secretsEqual := storedSecretsHash == fetchedSecretsHash
 
-	if d.HasChanges("yaml_files", "secrets_arns", "file_name", "compatible_runtimes") || !secretsEqual {
+	if d.HasChanges("yaml_config", "secrets_arns", "envs_map", "file_name", "compatible_runtimes") || !secretsEqual {
 		logger.Debug("resourceLambdaLayerUpdate HasChanges", "value", true)
 		skipDestroy := d.Get("skip_destroy").(bool)
 		logger.Debug("skipDestroy", "value", skipDestroy)
@@ -282,9 +287,21 @@ func expandStringList(lst []interface{}) []*string {
 	return strings
 }
 
+// Function to convert map to .env format
+func mapToEnvFormat(envsMap map[string]interface{}) string {
+	var envBuilder strings.Builder
+
+	for k, v := range envsMap {
+		envBuilder.WriteString(fmt.Sprintf("%s=%s\n", k, v))
+	}
+
+	return envBuilder.String()
+}
+
 func createEnvFileContent(d *schema.ResourceData, sess *session.Session) (string, error, string) {
 	yamlConfig := d.Get("yaml_config").(string)
 	secretsArns := d.Get("secrets_arns").([]interface{})
+	envsMap := d.Get("envs_map").(map[string]interface{})
 
 	mergedVars, err := processYamlConfig(yamlConfig)
 	if err != nil {
@@ -319,6 +336,8 @@ func createEnvFileContent(d *schema.ResourceData, sess *session.Session) (string
 	for k, v := range mergedVars {
 		envFileContent += fmt.Sprintf("%s=%v\n", k, v)
 	}
+
+	envFileContent += mapToEnvFormat(envsMap)
 
 	// Fetch secrets hash using the fetchSecrets function
 	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess)

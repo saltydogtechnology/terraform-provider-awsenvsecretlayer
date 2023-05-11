@@ -1,14 +1,15 @@
-module github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer
+module terraform-provider-custom_lambda_layer
 
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.44.246
+	github.com/aws/aws-sdk-go v1.44.261
 	github.com/ghodss/yaml v1.0.0
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/terraform-plugin-docs v0.14.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
-	github.com/stretchr/testify v1.7.2
+	github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer v0.0.2
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
