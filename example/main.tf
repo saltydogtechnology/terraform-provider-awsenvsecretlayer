@@ -2,7 +2,7 @@
 #   required_providers {
 #     awsenvsecretlayer = {
 #       source  = "terraform.local/com/awsenvsecretlayer"
-#       version = "0.0.3"
+#       version = "0.0.5"
 #     }
 #   }
 # }
@@ -10,7 +10,7 @@ terraform {
   required_providers {
     awsenvsecretlayer = {
       source = "saltydogtechnology/awsenvsecretlayer"
-      version = "0.0.3"
+      version = "0.0.5"
     }
   }
 }
