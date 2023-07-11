@@ -2,7 +2,7 @@
 #   required_providers {
 #     awsenvsecretlayer = {
 #       source  = "terraform.local/com/awsenvsecretlayer"
-#       version = "0.0.5"
+#       version = "0.0.6"
 #     }
 #   }
 # }
@@ -10,7 +10,7 @@ terraform {
   required_providers {
     awsenvsecretlayer = {
       source = "saltydogtechnology/awsenvsecretlayer"
-      version = "0.0.5"
+      version = "0.0.6"
     }
   }
 }
@@ -49,7 +49,3 @@ resource "awsenvsecretlayer_lambda" "example" {
 output "stored_secrets" {
   value = awsenvsecretlayer_lambda.example.stored_secrets_hash
 }
-
-# re "lambda"{
-#   layer_arn = awsenvsecretlayer_lambda.example.id
-# }

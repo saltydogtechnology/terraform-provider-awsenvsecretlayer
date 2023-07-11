@@ -5,6 +5,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 
 	"github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer/awsenvsecretlayer"
+	// "terraform-provider-awsenvsecretlayer/awsenvsecretlayer"
+
 )
 
 // Generate the Terraform provider documentation using `tfplugindocs`:

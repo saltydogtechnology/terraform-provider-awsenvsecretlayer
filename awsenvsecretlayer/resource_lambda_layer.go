@@ -173,7 +173,7 @@ func resourceLambdaLayerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	// Check if storedSecretsHash and fetchedSecrets are equal
 	secretsEqual := storedSecretsHash == fetchedSecretsHash
 
-	if d.HasChanges("yaml_config", "secrets_arns", "envs_map", "file_name", "compatible_runtimes") || !secretsEqual {
+	if d.HasChanges("yaml_config", "secrets_arns", "envs_map", "file_name", "compatible_runtimes") || !secretsEqual || d.Get("need_update").(bool) {
 		logger.Debug("resourceLambdaLayerUpdate HasChanges", "value", true)
 		skipDestroy := d.Get("skip_destroy").(bool)
 		logger.Debug("skipDestroy", "value", skipDestroy)
