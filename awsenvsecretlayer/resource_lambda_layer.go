@@ -86,6 +86,10 @@ func resourceLambdaLayer() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"layer_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -133,7 +137,9 @@ func resourceLambdaLayerCreate(ctx context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%s:%d", *output.LayerArn, *output.Version))
+	d.SetId(fmt.Sprintf("%s", *output.LayerArn))
+	d.Set("layer_id", fmt.Sprintf("%s:%d", *output.LayerArn, *output.Version))
+	logger.Debug("DEBUG layer id", "value", fmt.Sprintf("%s:%d", *output.LayerArn, *output.Version))
 	d.Set("stored_secrets_hash", secretHash)
 
 	return resourceLambdaLayerRead(ctx, d, m)
@@ -238,6 +244,12 @@ func resourceLambdaLayerCustomizeDiff(ctx context.Context, diff *schema.Resource
 		if err := diff.SetNew("stored_secrets_hash", fetchedSecretsHash); err != nil {
 			return err
 		}
+
+		// Mark a field to be recomputed
+		if err := diff.SetNewComputed("layer_id"); err != nil {
+			return err
+		}
+		
 	}
 
 	return nil

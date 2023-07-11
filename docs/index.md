@@ -30,7 +30,7 @@ terraform {
   required_providers {
     awsenvsecretlayer = {
       source = "saltydogtechnology/awsenvsecretlayer"
-      version = "0.0.6"
+      version = "0.0.7"
     }
   }
 }

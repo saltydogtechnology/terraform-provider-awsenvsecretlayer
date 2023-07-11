@@ -23,7 +23,7 @@ terraform {
   required_providers {
     awsenvsecretlayer = {
       source = "saltydogtechnology/awsenvsecretlayer"
-      version = "0.0.6"
+      version = "0.0.7"
     }
   }
 }
@@ -137,7 +137,7 @@ resource "awsenvsecretlayer_lambda" "example" {
   </thead>
   <tbody>
     <tr>
-      <td>id</td>
+      <td>layer_id</td>
       <td>The ARN of the created Lambda layer.</td>
     </tr>
   </tbody>

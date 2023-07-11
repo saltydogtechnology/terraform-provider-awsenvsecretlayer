@@ -28,5 +28,5 @@ description: |-
 
 ### Read-Only
 
-- `id` (String) - The ID of this resource.
+- `layer_id` (String) - The ID of this resource.
 - `need_update` (Boolean) - Indicates whether the AWS Lambda Layer needs to be updated or not.
