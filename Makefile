@@ -7,10 +7,18 @@ OS_ARCH=darwin_amd64
 
 default: install
 
+go_mod_local:
+	rm -rf go.mod
+	rm -rf go.sum
+	go clean -modcache
+	go mod init terraform-provider-custom_lambda_layer
+	go mod tidy
+
 go_mod:
 	rm -rf go.mod
 	rm -rf go.sum
-	go mod init terraform-provider-custom_lambda_layer
+	go clean -modcache
+	go mod init github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer
 	go mod tidy
 
 build:

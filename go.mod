@@ -1,4 +1,4 @@
-module terraform-provider-custom_lambda_layer
+module github.com/saltydogtechnology/terraform-provider-awsenvsecretlayer
 
 go 1.20
 
