@@ -2,7 +2,7 @@ HOSTNAME=terraform.local
 NAMESPACE=com
 NAME=awsenvsecretlayer
 BINARY=terraform-provider-${NAME}
-VERSION=0.0.7
+VERSION=1.0.0
 OS_ARCH=darwin_amd64
 
 default: install
