@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	// "strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -82,6 +81,11 @@ func resourceLambdaLayer() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"track_actual_secrets": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 			"need_update": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -150,7 +154,7 @@ func resourceLambdaLayerRead(ctx context.Context, d *schema.ResourceData, m inte
 	secretsArns := d.Get("secrets_arns").([]interface{})
 	storedSecretsHash := d.Get("stored_secrets_hash").(string)
 
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, false)
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, false, d.Get("track_actual_secrets").(bool))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -171,7 +175,7 @@ func resourceLambdaLayerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	logger.Debug("resourceLambdaLayerUpdate storedSecretsHash", "value", storedSecretsHash)
 
 	// Fetch secrets using the fetchSecrets function
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, d.HasChange("secrets_arns"))
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, d.HasChange("secrets_arns"), d.Get("track_actual_secrets").(bool))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -244,7 +248,7 @@ func resourceLambdaLayerCustomizeDiff(ctx context.Context, diff *schema.Resource
 	secretsArns := diff.Get("secrets_arns").([]interface{})
 
 	// Fetch secrets hash using the fetchSecrets function
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, diff.HasChange("secrets_arns"))
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, diff.HasChange("secrets_arns"), diff.Get("track_actual_secrets").(bool))
 	if err != nil {
 		return err
 	}
@@ -353,7 +357,7 @@ func createEnvFileContent(d *schema.ResourceData, sess *session.Session) (string
 	envFileContent += mapToEnvFormat(envsMap)
 
 	// Fetch secrets hash using the fetchSecrets function
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, false)
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, false, d.Get("track_actual_secrets").(bool))
 	if err != nil {
 		return "", fmt.Errorf("failed to get fetchedSecretsHash: %s", err), ""
 	}
@@ -368,8 +372,8 @@ func isJSON(s string) bool {
     return json.Unmarshal([]byte(s), &js) == nil
 }
 
-func fetchSecrets(secretsArns []interface{}, sess *session.Session, arnsChanged bool) (string, error) {
-	if arnsChanged && len(secretsArns) == 0 {
+func fetchSecrets(secretsArns []interface{}, sess *session.Session, arnsChanged bool, trackActualSecrets bool) (string, error) {
+	if !trackActualSecrets && !arnsChanged && len(secretsArns) == 0 {
         logger.Debug("secrets_arns changed to empty list, skipping secrets fetching")
         return "", nil
     }
