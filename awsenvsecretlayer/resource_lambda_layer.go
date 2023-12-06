@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
+	// "strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -150,7 +150,7 @@ func resourceLambdaLayerRead(ctx context.Context, d *schema.ResourceData, m inte
 	secretsArns := d.Get("secrets_arns").([]interface{})
 	storedSecretsHash := d.Get("stored_secrets_hash").(string)
 
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess)
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, false)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -171,7 +171,7 @@ func resourceLambdaLayerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	logger.Debug("resourceLambdaLayerUpdate storedSecretsHash", "value", storedSecretsHash)
 
 	// Fetch secrets using the fetchSecrets function
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess)
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, d.HasChange("secrets_arns"))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -179,13 +179,13 @@ func resourceLambdaLayerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	// Check if storedSecretsHash and fetchedSecrets are equal
 	secretsEqual := storedSecretsHash == fetchedSecretsHash
 
-	if d.HasChanges("yaml_config", "secrets_arns", "envs_map", "file_name", "compatible_runtimes") || !secretsEqual || d.Get("need_update").(bool) {
+	if d.HasChanges("layer_name", "yaml_config", "secrets_arns", "envs_map", "file_name", "compatible_runtimes", "license_files") || !secretsEqual || d.Get("need_update").(bool) {
 		logger.Debug("resourceLambdaLayerUpdate HasChanges", "value", true)
 		skipDestroy := d.Get("skip_destroy").(bool)
 		logger.Debug("skipDestroy", "value", skipDestroy)
 
 		if !skipDestroy {
-			err := deleteLayerVersion(ctx, d, m)
+			err := resourceLambdaLayerDelete(ctx, d, m)
 			if err != nil {
 				return err
 			}
@@ -197,32 +197,45 @@ func resourceLambdaLayerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	return nil
 }
 
-func deleteLayerVersion(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	logger.Debug("running deleteLayerVersion...")
-	sess := m.(*session.Session)
+func deleteLambdaLayerVersions(layerARN string, sess *session.Session) error {
+    lambdaSvc := lambda.New(sess)
+    layerName := extractLayerName(layerARN)
+	logger.Debug("deleteLambdaLayerVersions", "layerARN", layerARN)
+	logger.Debug("deleteLambdaLayerVersions", "layerName", layerName)
 
-	layerARN := d.Id()
-	logger.Debug("deleteLayerVersion layerARN", "value", layerARN)
-	layerName := layerARN[:strings.LastIndex(layerARN, ":")]
-	logger.Debug("deleteLayerVersion layerName", "value", layerName)
+    listLayerVersionsOutput, err := lambdaSvc.ListLayerVersions(&lambda.ListLayerVersionsInput{
+        LayerName: aws.String(layerName),
+    })
+    if err != nil {
+        return err
+    }
 
-	versionNumber, err := strconv.Atoi(layerARN[strings.LastIndex(layerARN, ":")+1:])
-	logger.Debug("deleteLayerVersion versionNumber", "value", versionNumber)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+    logger.Debug("deleteLambdaLayerVersions", "listLayerVersionsOutput", fmt.Sprintf("%+v", listLayerVersionsOutput))
 
-	lambdaSvc := lambda.New(sess)
-	_, err = lambdaSvc.DeleteLayerVersion(&lambda.DeleteLayerVersionInput{
-		LayerName:     aws.String(layerName),
-		VersionNumber: aws.Int64(int64(versionNumber)),
-	})
+    for _, layerVersion := range listLayerVersionsOutput.LayerVersions {
+		logger.Debug("deleteLambdaLayerVersions", "layerVersion", layerVersion)
+        _, err = lambdaSvc.DeleteLayerVersion(&lambda.DeleteLayerVersionInput{
+            LayerName:     aws.String(layerName),
+            VersionNumber: layerVersion.Version,
+        })
+        if err != nil {
+            return err
+        }
+    }
 
-	if err != nil {
-		return diag.FromErr(err)
-	}
+    return nil
+}
 
-	return nil
+func extractLayerName(layerARN string) string {
+	logger.Debug("extractLayerName", "layerARN", layerARN)
+    arnParts := strings.Split(layerARN, ":")
+    if len(arnParts) < 7 {
+        logger.Error("Invalid Lambda Layer ARN", "ARN", layerARN)
+        return ""
+    }
+    layerName := arnParts[6]
+    logger.Debug("extractLayerName", "layerName", layerName)
+    return layerName
 }
 
 func resourceLambdaLayerCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
@@ -231,7 +244,7 @@ func resourceLambdaLayerCustomizeDiff(ctx context.Context, diff *schema.Resource
 	secretsArns := diff.Get("secrets_arns").([]interface{})
 
 	// Fetch secrets hash using the fetchSecrets function
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess)
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, diff.HasChange("secrets_arns"))
 	if err != nil {
 		return err
 	}
@@ -252,38 +265,26 @@ func resourceLambdaLayerCustomizeDiff(ctx context.Context, diff *schema.Resource
 		
 	}
 
+	if diff.HasChanges("layer_name", "yaml_config", "envs_map", "file_name", "compatible_runtimes", "license_files") {
+        if err := diff.SetNewComputed("layer_id"); err != nil {
+            return err
+        }
+    }
+
 	return nil
 }
 
 func resourceLambdaLayerDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sess := m.(*session.Session)
+    sess := m.(*session.Session)
+    layerARN := d.Id()
+	logger.Debug("resourceLambdaLayerDelete", "layerARN", layerARN)
 
-	layerARN := d.Id()
-	layerName := layerARN[:strings.LastIndex(layerARN, ":")]
+    err := deleteLambdaLayerVersions(layerARN, sess)
+    if err != nil {
+        return diag.FromErr(err)
+    }
 
-	lambdaSvc := lambda.New(sess)
-
-	// List all layer versions
-	listLayerVersionsInput := &lambda.ListLayerVersionsInput{
-		LayerName: aws.String(layerName),
-	}
-	listLayerVersionsOutput, err := lambdaSvc.ListLayerVersions(listLayerVersionsInput)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Delete all layer versions
-	for _, layerVersion := range listLayerVersionsOutput.LayerVersions {
-		_, err = lambdaSvc.DeleteLayerVersion(&lambda.DeleteLayerVersionInput{
-			LayerName:     aws.String(layerName),
-			VersionNumber: layerVersion.Version,
-		})
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	return nil
+    return nil
 }
 
 func expandStringList(lst []interface{}) []*string {
@@ -352,36 +353,55 @@ func createEnvFileContent(d *schema.ResourceData, sess *session.Session) (string
 	envFileContent += mapToEnvFormat(envsMap)
 
 	// Fetch secrets hash using the fetchSecrets function
-	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess)
+	fetchedSecretsHash, err := fetchSecrets(secretsArns, sess, false)
 	if err != nil {
 		return "", fmt.Errorf("failed to get fetchedSecretsHash: %s", err), ""
 	}
 
-	// secretHash := computeSecretsHash(secretVars)
 	logger.Debug("createEnvFileContent fetchedSecretsHash", "value", fetchedSecretsHash)
 
 	return envFileContent, nil, fetchedSecretsHash
 }
 
-func fetchSecrets(secretsArns []interface{}, sess *session.Session) (string, error) {
-	svc := secretsmanager.New(sess)
-	fetchedSecrets := make(map[string]string)
+func isJSON(s string) bool {
+    var js map[string]interface{}
+    return json.Unmarshal([]byte(s), &js) == nil
+}
 
-	for _, secretArn := range secretsArns {
-		input := &secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(secretArn.(string)),
-		}
+func fetchSecrets(secretsArns []interface{}, sess *session.Session, arnsChanged bool) (string, error) {
+	if arnsChanged && len(secretsArns) == 0 {
+        logger.Debug("secrets_arns changed to empty list, skipping secrets fetching")
+        return "", nil
+    }
 
-		result, err := svc.GetSecretValue(input)
-		if err != nil {
-			return "", fmt.Errorf("failed to fetch secret: %s, %s", secretArn, err)
-		}
+    svc := secretsmanager.New(sess)
+    fetchedSecrets := make(map[string]string)
 
-		secretName := aws.StringValue(result.Name)
-		secretValue := aws.StringValue(result.SecretString)
-		fetchedSecrets[secretName] = secretValue
-	}
+    for _, secretArn := range secretsArns {
+        input := &secretsmanager.GetSecretValueInput{
+            SecretId: aws.String(secretArn.(string)),
+        }
 
-	fetchedSecretsHash := computeSecretsHash(fetchedSecrets)
-	return fetchedSecretsHash, nil
+        result, err := svc.GetSecretValue(input)
+        if err != nil {
+            return "", fmt.Errorf("failed to fetch secret: %s, %s", secretArn, err)
+        }
+
+        secretString := aws.StringValue(result.SecretString)
+        if isJSON(secretString) {
+            var secretVars map[string]string
+            err = json.Unmarshal([]byte(secretString), &secretVars)
+            if err != nil {
+                return "", fmt.Errorf("failed to unmarshal secret JSON: %s", err)
+            }
+            for k, v := range secretVars {
+                fetchedSecrets[k] = v
+            }
+        } else {
+            fetchedSecrets[aws.StringValue(result.Name)] = secretString
+        }
+    }
+
+    fetchedSecretsHash := computeSecretsHash(fetchedSecrets)
+    return fetchedSecretsHash, nil
 }
